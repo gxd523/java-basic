@@ -2,6 +2,7 @@ package com.demo.java.basic.socket.chat;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Collection;
@@ -39,8 +40,8 @@ public class ChatServer implements OnSocketTaskListener {
     private void updateClientList(Collection<Socket> socketCollection) throws IOException {
         for (Socket socket : socketCollection) {
             OutputStream outputStream = socket.getOutputStream();
-            outputStream.write(socketMap.keySet().toString().getBytes());
-            outputStream.flush();
+            PrintWriter printWriter = new PrintWriter(outputStream, true);
+            printWriter.println(socketMap.keySet().toString());
             System.out.println("更新客户端列表-->" + socketMap.keySet().toString());
         }
     }

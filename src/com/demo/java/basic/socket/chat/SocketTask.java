@@ -1,9 +1,6 @@
 package com.demo.java.basic.socket.chat;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class SocketTask implements Runnable {
@@ -33,9 +30,9 @@ public class SocketTask implements Runnable {
                 if (split.length > 1) {
                     Socket socket1 = onSocketTaskListener.getSocket(split[1]);
                     OutputStream outputStream = socket1.getOutputStream();
+                    PrintWriter printWriter = new PrintWriter(outputStream, true);
                     String msg = socketKey + "==>" + split[0];
-                    outputStream.write(msg.getBytes());
-                    outputStream.flush();
+                    printWriter.println(msg);
                     System.out.println("服务器向..." + split[1] + "...发送数据: " + split[0]);
                 }
             }
