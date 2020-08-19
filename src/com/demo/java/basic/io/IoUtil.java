@@ -4,6 +4,26 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class IoUtil {
+    public static String streamToString(InputStream inputStream) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        StringBuilder stringBuilder = new StringBuilder();
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return stringBuilder.toString();
+    }
+
     /**
      * 通过键盘录入文字输出到文件
      */
@@ -72,5 +92,25 @@ public class IoUtil {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * 序列化
+     */
+    public static <T> void serialize(T t, File file) throws IOException {
+        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(file));
+        outputStream.writeObject(t);
+        outputStream.close();
+    }
+
+    /**
+     * 反序列化
+     * User user = IoUtil.<User>deserialize();
+     */
+    public static <T> T deserialize(File file) throws IOException, ClassNotFoundException {
+        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(file));
+        T t = (T) inputStream.readObject();
+        inputStream.close();
+        return t;
     }
 }
