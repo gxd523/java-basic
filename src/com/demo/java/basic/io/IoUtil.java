@@ -5,58 +5,39 @@ import java.nio.charset.StandardCharsets;
 
 public class IoUtil {
     public static String streamToString(InputStream inputStream) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        try {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            StringBuilder stringBuilder = new StringBuilder();
+            String line;
             while ((line = reader.readLine()) != null) {
                 stringBuilder.append(line);
             }
+            return stringBuilder.toString();
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                reader.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
-        return stringBuilder.toString();
+        return null;
     }
 
     /**
      * 通过键盘录入文字输出到文件
      */
     public static void printToFile(String dstPath, boolean append) {
-        BufferedWriter bufferedWriter = null;
-        BufferedReader bufferedReader = null;
-        try {
-            FileOutputStream fileOutputStream = new FileOutputStream(dstPath, append);
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, StandardCharsets.UTF_8);
-            bufferedWriter = new BufferedWriter(outputStreamWriter);
+        try (
+                FileOutputStream fileOutputStream = new FileOutputStream(dstPath, append);
+                OutputStreamWriter outputStreamWriter = new OutputStreamWriter(fileOutputStream, StandardCharsets.UTF_8);
+                BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter);
 
-            InputStreamReader inputStreamReader = new InputStreamReader(System.in);
-            bufferedReader = new BufferedReader(inputStreamReader);
-
+                InputStreamReader inputStreamReader = new InputStreamReader(System.in);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+        ) {
             String s;
-            while ((s = bufferedReader.readLine()) != null) {
+            while ((s = bufferedReader.readLine()) != null && !"exit".equals(s)) {
                 bufferedWriter.write(s);
                 bufferedWriter.newLine();
                 bufferedWriter.flush();
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (bufferedWriter != null) {
-                    bufferedWriter.close();
-                }
-                if (bufferedReader != null) {
-                    bufferedReader.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -64,15 +45,10 @@ public class IoUtil {
      * 拷贝文件
      */
     public static void copyFile(String srcPath, String dstPath) {
-        BufferedInputStream bufferedInputStream = null;
-        BufferedOutputStream bufferedOutputStream = null;
-        try {
-            FileInputStream fileInputStream = new FileInputStream(srcPath);
-            bufferedInputStream = new BufferedInputStream(fileInputStream);
-
-            FileOutputStream fileOutputStream = new FileOutputStream(dstPath);
-            bufferedOutputStream = new BufferedOutputStream(fileOutputStream);
-
+        try (// 使用try-with-resources可以自动关闭流
+             BufferedInputStream bufferedInputStream = new BufferedInputStream(new FileInputStream(srcPath));
+             BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(dstPath))
+        ) {
             int length;
             byte[] bytes = new byte[1024];
             while ((length = bufferedInputStream.read(bytes)) != -1) {
@@ -80,17 +56,6 @@ public class IoUtil {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                if (bufferedInputStream != null) {
-                    bufferedInputStream.close();
-                }
-                if (bufferedOutputStream != null) {
-                    bufferedOutputStream.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 
@@ -98,9 +63,9 @@ public class IoUtil {
      * 序列化
      */
     public static <T> void serialize(T t, File file) throws IOException {
-        ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(file));
-        outputStream.writeObject(t);
-        outputStream.close();
+        try (ObjectOutputStream outputStream = new ObjectOutputStream(new FileOutputStream(file))) {
+            outputStream.writeObject(t);
+        }
     }
 
     /**
@@ -108,9 +73,10 @@ public class IoUtil {
      * User user = IoUtil.<User>deserialize();
      */
     public static <T> T deserialize(File file) throws IOException, ClassNotFoundException {
-        ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(file));
-        T t = (T) inputStream.readObject();
-        inputStream.close();
+        T t;
+        try (ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(file))) {
+            t = (T) inputStream.readObject();
+        }
         return t;
     }
 }
