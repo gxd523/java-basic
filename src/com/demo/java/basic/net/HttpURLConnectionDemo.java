@@ -135,39 +135,58 @@ public class HttpURLConnectionDemo {
     public static Runnable downloadFile() {
         return () -> {
             try {
-                URL url = new URL("http://down.znds.com/getdownurl/?s=ZG93bi8yMDIwMDcxMS9kYnptXzMuMy4xZGFuZ2JlaS5hcGs=");
-                final HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-                httpURLConnection.setRequestMethod("GET");
-                httpURLConnection.setDoInput(true);
-                httpURLConnection.setDoOutput(true);
-                httpURLConnection.setUseCaches(false);
-                httpURLConnection.connect();
-
-                if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    int currentLength = 0;
-                    InputStream inputStream = httpURLConnection.getInputStream();
-                    File apkFile = new File("zzz.apk");
-                    FileOutputStream outputStream = new FileOutputStream(apkFile);
-                    byte[] bytes = new byte[1024];
-                    int length;
-                    while ((length = inputStream.read(bytes)) != -1) {
-                        outputStream.write(bytes, 0, length);
-                        currentLength += length;
-
-                        final int finalCurrentLength = currentLength;
-                        int downloadPercent = finalCurrentLength * 100 / httpURLConnection.getContentLength();
-                        System.out.printf("已下载...%s%%\n", downloadPercent);
-                    }
-                    inputStream.close();
-                    outputStream.close();
-
-                    if (apkFile.exists()) {
-                        System.out.println("文件下载成功!");
-                    }
-                }
+                requestDownload("http://down.znds.com/getdownurl/?s=ZG93bi8yMDIwMDcxMS9kYnptXzMuMy4xZGFuZ2JlaS5hcGs=", null);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         };
+    }
+
+    private static void requestDownload(String requestUrl, File file) throws IOException {
+        URL url = new URL(requestUrl);
+        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+        httpURLConnection.setRequestMethod("GET");
+        httpURLConnection.setDoInput(true);
+        httpURLConnection.setDoOutput(false);
+        httpURLConnection.setUseCaches(false);
+        // 是否重定向
+        httpURLConnection.setInstanceFollowRedirects(false);
+        httpURLConnection.connect();
+
+        if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
+            String redirectUrl = httpURLConnection.getHeaderField("Location");
+            if (redirectUrl == null) {
+                return;
+            }
+            String fileName = redirectUrl.substring(redirectUrl.lastIndexOf('/') + 1);
+            System.out.println("redirectUrl-->" + redirectUrl);
+            requestDownload(redirectUrl, new File(fileName));
+        } else if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            int currentLength = 0;
+            InputStream inputStream = httpURLConnection.getInputStream();
+            if (file == null) {
+                file = new File("a.apk");
+            }
+            FileOutputStream outputStream = new FileOutputStream(file);
+            byte[] bytes = new byte[1024];
+            int length;
+            int previousDownloadPercent = 0;
+            while ((length = inputStream.read(bytes)) != -1) {
+                outputStream.write(bytes, 0, length);
+                currentLength += length;
+
+                int downloadPercent = currentLength * 100 / httpURLConnection.getContentLength();
+                if (previousDownloadPercent != downloadPercent) {
+                    System.out.printf("已下载...%s%%\n", downloadPercent);
+                }
+                previousDownloadPercent = downloadPercent;
+            }
+            inputStream.close();
+            outputStream.close();
+
+            if (file.exists()) {
+                System.out.println("文件下载成功!");
+            }
+        }
     }
 }
