@@ -20,9 +20,10 @@ public class HttpURLConnectionDemo {
     public static Runnable get() {
         return () -> {
             StringBuilder stringBuilder = new StringBuilder();
+            HttpURLConnection httpURLConnection = null;
             try {
                 URL url = new URL("http://zmapi.dangbei.net/time.php?timestamp=" + System.currentTimeMillis());
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("GET");
                 // 是否开启输入流，默认true
                 httpURLConnection.setDoInput(true);
@@ -42,6 +43,10 @@ public class HttpURLConnectionDemo {
             } catch (IOException e) {
                 e.printStackTrace();
                 stringBuilder.append(e.getMessage());
+            } finally {
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
+                }
             }
             System.out.printf("Get请求返回数据-->%s\n", stringBuilder.toString());
         };
@@ -50,9 +55,10 @@ public class HttpURLConnectionDemo {
     public static Runnable post() {
         return () -> {
             StringBuilder stringBuilder = new StringBuilder();
+            HttpURLConnection httpURLConnection = null;
             try {
                 URL url = new URL("http://zmapi.dangbei.net/time.php");
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
@@ -77,6 +83,10 @@ public class HttpURLConnectionDemo {
             } catch (IOException e) {
                 e.printStackTrace();
                 stringBuilder.append(e.getMessage());
+            } finally {
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
+                }
             }
             System.out.printf("Get请求返回数据-->%s\n", stringBuilder.toString());
         };
@@ -85,9 +95,10 @@ public class HttpURLConnectionDemo {
     public static Runnable uploadFile() {
         return () -> {
             StringBuilder stringBuilder = new StringBuilder();
+            HttpURLConnection httpURLConnection = null;
             try {
                 URL url = new URL("http://zmapi.dangbei.net/time.php");
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
@@ -122,6 +133,10 @@ public class HttpURLConnectionDemo {
             } catch (IOException e) {
                 e.printStackTrace();
                 stringBuilder.append(e.getMessage());
+            } finally {
+                if (httpURLConnection != null) {
+                    httpURLConnection.disconnect();
+                }
             }
             System.out.printf("打印结果...%s\n", stringBuilder.toString());
         };
@@ -134,58 +149,63 @@ public class HttpURLConnectionDemo {
 
     public static Runnable downloadFile() {
         return () -> {
-            try {
-                requestDownload("http://down.znds.com/getdownurl/?s=ZG93bi8yMDIwMDcxMS9kYnptXzMuMy4xZGFuZ2JlaS5hcGs=", null);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            requestDownload("http://down.znds.com/getdownurl/?s=ZG93bi8yMDIwMDcxMS9kYnptXzMuMy4xZGFuZ2JlaS5hcGs=", null);
         };
     }
 
-    private static void requestDownload(String requestUrl, File file) throws IOException {
-        URL url = new URL(requestUrl);
-        HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
-        httpURLConnection.setRequestMethod("GET");
-        httpURLConnection.setDoInput(true);
-        httpURLConnection.setDoOutput(false);
-        httpURLConnection.setUseCaches(false);
-        // 是否重定向
-        httpURLConnection.setInstanceFollowRedirects(false);
-        httpURLConnection.connect();
+    private static void requestDownload(String requestUrl, File file) {
+        HttpURLConnection httpURLConnection = null;
+        try {
+            URL url = new URL(requestUrl);
+            httpURLConnection = (HttpURLConnection) url.openConnection();
+            httpURLConnection.setRequestMethod("GET");
+            httpURLConnection.setDoInput(true);
+            httpURLConnection.setDoOutput(false);
+            httpURLConnection.setUseCaches(false);
+            // 是否重定向
+            httpURLConnection.setInstanceFollowRedirects(false);
+            httpURLConnection.connect();
 
-        if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
-            String redirectUrl = httpURLConnection.getHeaderField("Location");
-            if (redirectUrl == null) {
-                return;
-            }
-            String fileName = redirectUrl.substring(redirectUrl.lastIndexOf('/') + 1);
-            System.out.println("redirectUrl-->" + redirectUrl);
-            requestDownload(redirectUrl, new File(fileName));
-        } else if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-            int currentLength = 0;
-            InputStream inputStream = httpURLConnection.getInputStream();
-            if (file == null) {
-                file = new File("a.apk");
-            }
-            FileOutputStream outputStream = new FileOutputStream(file);
-            byte[] bytes = new byte[1024];
-            int length;
-            int previousDownloadPercent = 0;
-            while ((length = inputStream.read(bytes)) != -1) {
-                outputStream.write(bytes, 0, length);
-                currentLength += length;
-
-                int downloadPercent = currentLength * 100 / httpURLConnection.getContentLength();
-                if (previousDownloadPercent != downloadPercent) {
-                    System.out.printf("已下载...%s%%\n", downloadPercent);
+            if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_MOVED_TEMP) {
+                String redirectUrl = httpURLConnection.getHeaderField("Location");
+                if (redirectUrl == null) {
+                    return;
                 }
-                previousDownloadPercent = downloadPercent;
-            }
-            inputStream.close();
-            outputStream.close();
+                String fileName = redirectUrl.substring(redirectUrl.lastIndexOf('/') + 1);
+                System.out.println("redirectUrl-->" + redirectUrl);
+                requestDownload(redirectUrl, new File(fileName));
+            } else if (httpURLConnection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                int currentLength = 0;
+                InputStream inputStream = httpURLConnection.getInputStream();
+                if (file == null) {
+                    file = new File("a.apk");
+                }
+                FileOutputStream outputStream = new FileOutputStream(file);
+                byte[] bytes = new byte[1024];
+                int length;
+                int previousDownloadPercent = 0;
+                while ((length = inputStream.read(bytes)) != -1) {
+                    outputStream.write(bytes, 0, length);
+                    currentLength += length;
 
-            if (file.exists()) {
-                System.out.println("文件下载成功!");
+                    int downloadPercent = currentLength * 100 / httpURLConnection.getContentLength();
+                    if (previousDownloadPercent != downloadPercent) {
+                        System.out.printf("已下载...%s%%\n", downloadPercent);
+                    }
+                    previousDownloadPercent = downloadPercent;
+                }
+                inputStream.close();
+                outputStream.close();
+
+                if (file.exists()) {
+                    System.out.println("文件下载成功!");
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (httpURLConnection != null) {
+                httpURLConnection.disconnect();
             }
         }
     }
